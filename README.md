@@ -7,3 +7,8 @@ For first run use:
 pip install -r requitements.txt
 python main.py
 ```
+In some cases:
+```bash
+pip3 install -r requitements.txt
+python3 main.py
+```
