@@ -1,0 +1,7 @@
+tmp/categories/*/
+tmp/files/docs/*
+tmp/files/reg_docs
+tmp/products/*
+venv
+.idea
+.DS_store
