@@ -12,7 +12,7 @@ cd parser2.0
 ```
 
 For first run use:
-> :warning: **At first run uncomment download() function before start**
+> :warning: **At first run uncomment download() function before start(main.py:224)**
 
 ```bash
 pip install -r requitements.txt
