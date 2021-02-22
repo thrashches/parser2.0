@@ -213,7 +213,8 @@ def get_all_products_for_category(category, row):
 
 # Функция открывает categories.txt и для каждой категории собирает все ее товары
 # Параметр start_row указывает с какой строки в выходном exel файле начать запись
-row = start_row
+def get_site(start_row=2):
+    row = start_row
     with open('categories.txt', 'r') as cats:
         for c in cats.readlines():
             row = get_all_products_for_category(c[:-1], row)
