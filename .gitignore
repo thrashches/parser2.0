@@ -1,7 +1,8 @@
-tmp/categories/*/
-tmp/files/docs/*
-tmp/files/reg_docs
-tmp/products/*
+*.html
+*.pdf
+*.doc
+*.docx
+!.keepme
 venv
 .idea
 .DS_store

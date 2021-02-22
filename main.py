@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import re
 from os import mkdir, listdir
 import openpyxl
-# from selenium import webdriver
 
 
 def get_page_count(site, category):
@@ -59,6 +58,21 @@ def get_product_links(category):
     return product_links
 
 
+def get_doc_ids(link):
+    ids = []
+    with requests.Session() as s:
+        load = {
+            "cr_documentation_action": "load_list"
+        }
+        p = s.post(link, data=load)
+    content = p.content.decode().replace('\\', '')
+    soup = BeautifulSoup(content, 'html.parser')
+    for tr in soup.find_all('tr'):
+        if tr.has_attr('data-documentation-id'):
+            ids.append(int(tr.get('data-documentation-id')))
+    return ids
+
+
 def get_product_data(link):
     print('Fetching product data from: {}'.format(link))
     r = requests.get(link)
@@ -72,7 +86,7 @@ def get_product_data(link):
         category = breadcrumb.find_all('li')[1].span.contents[0]
         # Проверить наличие других
         subcategory = ''
-        if len(breadcrumb.find_all('li'))>3:
+        if len(breadcrumb.find_all('li')) > 3:
             counter = len(breadcrumb.find_all('li')) - 2
             while counter > 1:
                 subcategory += '{}, '.format(breadcrumb.find_all('li')[counter].span.contents[0])
@@ -81,7 +95,7 @@ def get_product_data(link):
         code = soup.find('div', {'class': 'h2'}).meta.attrs['content']
         if 'Артикул' in soup.find('div', {'class': 'h2'}).small.contents[0]:
             art = soup.find('div', {'class': 'h2'}).small.contents[0].split('Артикул: ')[1].split(')')[0]
-            code += art
+            code += '; ' + art
         in_stock = ''  # soup.find('p', {'class': 'h4-product'}).contents[0].split(':')[1][1:]
         delivery = ''  # soup.find('div', {'class': 'stock-7'}).div.contents[0]
         brand = ''  # soup.find_all('div', {'class': 'stock-7'})[1].h4.contents[0].split('Бренд: ')[1]
@@ -135,32 +149,31 @@ def get_product_data(link):
             for sticker in soup.find('div', {'class': 'xd_stickers_wrapper xd_stickers_product'}).find_all('div'):
                 stickers += '{}, '.format(sticker.text.split("\t")[8])
 
-        # files = ''
-        # reg_docs = ''
-        # chromeOptions = webdriver.ChromeOptions()
-        # prefs = {"download.default_directory": "tmp/files/reg_docs/"}
-        # chromeOptions.add_experimental_option("prefs", prefs)
-        # chromeOptions.add_argument("--kiosk")
-        #
-        # driver = webdriver.Chrome(chrome_options=chromeOptions)
-        # driver.get(link)
-        # elem = driver.find_element_by_partial_link_text('Регистрационные документы')
-        # elem.click()
-        # elems = driver.find_elements_by_name('email')
-        # for el in elems:
-        #     el.find_elements_by_name('email')
-        #
-        #     el.send_keys('1@1.ru')
-        # links = driver.find_elements_by_class_name('doc-lnk')
-        # for el in links:
-        #     el.click()
-        # driver.close()
+        files = ''
+        reg_docs = ''
+        ids = get_doc_ids(link)
+        if ids != []:
+            for id in ids:
+                with requests.Session() as s:
+                    load = {
+                        'email': '1@1.ru',
+                        'cr_documentation_action': 'download',
+                        'documentation_id': id
+                    }
+                    post = s.post(link, data=load)
+                    disposition = post.headers['content-disposition']
+                    pdf_name = disposition.split('filename*=UTF-8\'\'')[1]
+                    reg_docs += pdf_name + '; '
+                    with open('tmp/files/reg_docs/{}'.format(pdf_name), 'wb') as pdf:
+                        pdf.write(post.content)
+        print(reg_docs)
+
         data = {
             'Code': code,
             'Name': name,
             'URL': link,
             'Category': category,
-            'Subcategory': subcategory,
+            'Subcategory': subcategory[:-2],
             'In Stock': in_stock,
             'Delivery': delivery,
             'Brand': brand,
@@ -174,14 +187,12 @@ def get_product_data(link):
             'Description': desc,
             'Reviews': reviews,
             'Q&A(s)': qas,
-            'Doc(s)': docs,
-            'Registration docs': reg_docs
+            'Doc(s)': docs[:-2],
+            'Registration docs': reg_docs[:-2]
         }
     with open('tmp/products/{}.json'.format(file_name), 'a') as f:
         f.write(str(data))
     return data
-
-
 
 
 def get_all_products_for_category(category, row):
@@ -191,7 +202,7 @@ def get_all_products_for_category(category, row):
         wb = openpyxl.load_workbook('output.xlsx')
         sheet = wb['DATA']
         for col in range(0, len(data)):
-            cell = sheet.cell(row=this_row, column=col+1)
+            cell = sheet.cell(row=this_row, column=col + 1)
             cell.value = list(data.values())[col]
 
         wb.save('output.xlsx')
@@ -200,16 +211,20 @@ def get_all_products_for_category(category, row):
     return row
 
 
-def get_site():
-    row = 2
-
-    pass
+# Функция открывает categories.txt и для каждой категории собирает все ее товары
+# Параметр start_row указывает с какой строки в выходном exel файле начать запись
+def get_site(start_row=2):
+    with open('categories.txt', 'r') as cats:
+        for c in cats.readlines():
+            get_all_products_for_category(c[:-1], start_row)
 
 
 if __name__ == '__main__':
     pass
+    get_site()
+    # print(get_doc_ids('https://stomshop.pro/1079-000-000-vdw-sirona-6-1'))
 
-    get_all_products_for_category('nakonechniki-motory', 2)
+    # get_all_products_for_category('nakonechniki-motory', 2)
     # print(get_product_links('nakonechniki-motory'))
 
     # print(get_product_data('https://stomshop.pro/vatech-ezray-portable'))
