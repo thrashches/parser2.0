@@ -221,6 +221,7 @@ def get_site(start_row=2):
 
 if __name__ == '__main__':
     pass
+    # download()
     get_site()
     # print(get_doc_ids('https://stomshop.pro/1079-000-000-vdw-sirona-6-1'))
 
@@ -228,5 +229,5 @@ if __name__ == '__main__':
     # print(get_product_links('nakonechniki-motory'))
 
     # print(get_product_data('https://stomshop.pro/vatech-ezray-portable'))
-    # download()
+    
     # print(get_page_count('stomshop.pro', 'stomatologicheskoye-oborudovaniye'))
